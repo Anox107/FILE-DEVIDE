@@ -1,76 +1,52 @@
-#!/usr/bin/env python3 """split_uid_files.py
+import os
+import random
 
-A small utility to read a list of UIDs from a text file, remove duplicates, and randomly distribute them across multiple output files. Prompts are kept in Hindi (Devanagari) as in the original script. """
+def split_into_files(input_file, output_files):
+# Step 1: UID वाली फाइल से सभी लाइनें पढ़ो और डुप्लिकेट हटाओ
+with open(input_file, 'r', encoding='utf-8') as f:
+lines = list(set(line.strip() for line in f if line.strip()))
 
-import os import random from typing import List
+total = len(lines)  
+print(f"\n📊 कुल UID मिले: {total}")  
 
-def split_into_files(input_file: str, output_files: List[str]) -> None: """Read UID list, remove duplicates, randomly distribute into the provided output files.
+# Step 2: शफल करें ताकि रैंडम बाँटे जाएँ  
+random.shuffle(lines)  
 
-Args:
-    input_file: Path to the text file containing one UID per line.
-    output_files: List of paths where the split UID files will be written.
-"""
-# Step 1 – Read all lines, strip blanks, remove duplicates (order‑preserving)
-with open(input_file, "r", encoding="utf-8") as f:
-    lines = [line.strip() for line in f if line.strip()]
-lines = list(dict.fromkeys(lines))  # removes duplicates while preserving order
+# Step 3: बराबर 5 हिस्सों में बाँटे  
+chunk_size = total // 3  
+remainder = total % 3  
 
-total = len(lines)
-print(f"\n📊 कुल UID मिले: {total}")
+start = 0  
+for i in range(3):  
+    end = start + chunk_size + (1 if i < remainder else 0)  
+    chunk = lines[start:end]  
 
-# Step 2 – Shuffle so that distribution is random
-random.shuffle(lines)
+    with open(output_files[i], 'w', encoding='utf-8') as f:  
+        f.write('\n'.join(chunk))  
 
-# Step 3 – Split into the requested number of parts
-parts = len(output_files)
-if parts == 0:
-    print("❌ कोई आउटपुट फाइल नहीं दी गई।")
-    return
+    print(f"✅ output_{i+1}: {len(chunk)} UID लिखे गए → {output_files[i]}")  
+    start = end  
 
-chunk_size, remainder = divmod(total, parts)
-start = 0
-for i, out_path in enumerate(output_files):
-    end = start + chunk_size + (1 if i < remainder else 0)
-    chunk = lines[start:end]
+print("\n🎉 सभी UID अलग-अलग फाइलों में बाँटे गए।")
 
-    # Create parent directories if they don't exist
-    os.makedirs(os.path.dirname(out_path) or ".", exist_ok=True)
-    with open(out_path, "w", encoding="utf-8") as f:
-        f.write("\n".join(chunk))
+def main():
+print("📥 स्टेप 1: UID लिस्ट वाली इनपुट फाइल का path डालें:")
+input_file = input("➡ इनपुट फाइल path: ").strip()
 
-    print(f"✅ output_{i + 1}: {len(chunk)} UID लिखे गए → {out_path}")
-    start = end
+if not os.path.isfile(input_file):  
+    print("❌ फाइल नहीं मिली! कृपया सही path दें।")  
+    return  
 
-print("\n🎉 सभी UID सफलतापूर्वक अलग‑अलग फाइलों में बाँट दिए गए।")
+print("\n📁 स्टेप 2: अब  आउटपुट फाइलों के path एक-एक करके डालें:")  
 
-def main() -> None: """Command‑line interface that mirrors the original interactive behaviour."""
+output_files = []  
+for i in range(5):  
+    path = input(f"➡ आउटपुट फाइल {i+1} का path: ").strip()  
+    output_files.append(path)  
 
-# Step 1 – Ask for input file
-input_file = input("📥 स्टेप 1: UID लिस्ट वाली इनपुट फाइल का path डालें:\n➡ ").strip()
-if not os.path.isfile(input_file):
-    print("❌ फाइल नहीं मिली! कृपया सही path दें।")
-    return
-
-# Step 2 – Ask for number of parts
-while True:
-    try:
-        num_parts = int(input("\n🔢 कितने हिस्सों में बाँटना है? ").strip())
-        if num_parts <= 0:
-            raise ValueError
-        break
-    except ValueError:
-        print("❌ कृपया 1 या उससे अधिक का वैध integer दें।")
-
-# Step 3 – Collect output file paths
-print("\n📁 स्टेप 2: अब आउटपुट फाइलों के path एक‑एक करके डालें:")
-output_files = []
-for i in range(num_parts):
-    path = input(f"➡ आउटपुट फाइल {i + 1} का path: ").strip()
-    output_files.append(path)
-
-# Start processing
-print("\n🔄 बाँटना शुरू किया जा रहा है...")
+# प्रोसेस शुरू  
+print("\n🔄 बाँटना शुरू किया जा रहा है...")  
 split_into_files(input_file, output_files)
 
-if name == "main": main()
-
+if name == "main":
+main()
